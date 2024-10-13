@@ -1,4 +1,4 @@
-// // Disclosure: I used ChatGPT to assist with the content of this assignment.
+// Disclosure: I used ChatGPT to assist with the content of this assignment.
 
 
 // const http = require('http');
@@ -19,7 +19,7 @@
 // db.connect((err) => {
 //     if (err) throw err;
 //     console.log('MySQL connected...');
-//     const createTable = `CREATE TABLE IF NOT EXISTS patients (
+//     const createTable = `CREATE TABLE IF NOT EXISTS patient (
 //         patientid INT(11) AUTO_INCREMENT PRIMARY KEY,
 //         name VARCHAR(100),
 //         dateOfBirth DATETIME
@@ -64,7 +64,7 @@
 //             }
 
 //             // Insert patient data into the database
-//             const insertData = `INSERT INTO patients (name, dateOfBirth) VALUES ${patientData};`;
+//             const insertData = `INSERT INTO patient (name, dateOfBirth) VALUES ${patientData};`;
 
 //             db.query(insertData, (err, result) => {
 //                 if (err) {
@@ -91,6 +91,9 @@
 //                 return;
 //             }
 
+//                         // Decode the query from the URL
+//                         query = decodeURIComponent(query);
+
 //             // At this point, query has been set
 //             handleQuery(query);
 //         }
@@ -110,6 +113,9 @@
 //                     res.end(messages.errors.missingQuery); // Use message from en.js
 //                     return;
 //                 }
+
+//                                 // Decode the query from the POST body
+//                                 query = decodeURIComponent(query);
 
 //                 handleQuery(query);
 //             });
@@ -199,7 +205,10 @@ http.createServer((req, res) => {
 
     let parsedUrl = url.parse(req.url, true);
     const pathname = decodeURIComponent(parsedUrl.pathname); // Decode the pathname
-    const regex = /\/COMP4537\/labs\/5\/"(.*)"/; // Regular expression to capture the query part
+    // const regex = /\/COMP4537\/labs\/5\/"(.*)"/; // Regular expression to capture the query part
+    const regex = /\/lab5\/api\/v1\/sql\/"(.*)"/; // Regular expression to capture the query part
+
+
 
     // Check if the request matches the expected URL pattern
     const match = pathname.match(regex);
