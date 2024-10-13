@@ -10,12 +10,13 @@ module.exports = {
     noPatientData: 'No patient data provided',
     insertError: 'Error inserting data: %1',
     missingQuery: 'SQL query parameter is missing',
-    sqlForbidden: 'DROP and DELETE are not allowed',
+    sqlForbidden: 'DROP, DELETE and UPDATE are not allowed',
     sqlError: 'Error executing SQL query: %1'
   },
   success: {
     newEntryRecorded: 'Request# %3\nNew entry recorded:\n"%1: %2"',
     dataInserted: 'Data inserted successfully',
+    dataRetrieved: 'Data retrieved successfully',
   }
 };
 

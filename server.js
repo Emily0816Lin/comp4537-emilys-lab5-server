@@ -6,75 +6,139 @@ const url = require('url');
 const messages = require('./lang/en/en'); // Import the messages
 const port = process.env.PORT || 3000; // Use the Heroku-assigned port if available, otherwise default to 3000
 
-// Create connection to the MySQL database
-const db = mysql.createConnection({
-    host: 'zj2x67aktl2o6q2n.cbetxkdyhwsb.us-east-1.rds.amazonaws.com',
-    user: 'e72hw5599nadybng',
-    password: 'ek1g35pc8itb0xm8',
-    database: 'eo3ysjp1m3pfhh64'
-});
+// Database class for managing MySQL connection and queries
+class Database {
+    constructor() {
+        this.db = mysql.createConnection({
+            host: 'zj2x67aktl2o6q2n.cbetxkdyhwsb.us-east-1.rds.amazonaws.com',
+            user: 'e72hw5599nadybng',
+            password: 'ek1g35pc8itb0xm8',
+            database: 'eo3ysjp1m3pfhh64'
+        });
 
-// Create the patient table if it doesn't exist
-db.connect((err) => {
-    if (err) throw err;
-    console.log('MySQL connected...');
-    const createTable = `CREATE TABLE IF NOT EXISTS patient (
-        patientid INT(11) AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(100),
-        dateOfBirth DATETIME
-    ) ENGINE=INNODB;`;
-    db.query(createTable, (err, result) => {
-        if (err) throw err;
-        console.log("Table created or exists.");
-    });
-});
-
-// Handle SQL queries and POST requests
-http.createServer((req, res) => {
-    // Set CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');  // Allow all origins
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    // Handle OPTIONS (preflight) requests
-    if (req.method === 'OPTIONS') {
-        res.writeHead(204);
-        res.end();
-        return;
+        this.connectToDatabase();
     }
 
-    let parsedUrl = url.parse(req.url, true);
-    const pathname = decodeURIComponent(parsedUrl.pathname); // Decode the pathname
-    // const regex = /\/COMP4537\/labs\/5\/"(.*)"/; // Regular expression to capture the query part
-    const regex = /\/lab5\/api\/v1\/sql\/"(.*)"/; // Regular expression to capture the query part
-
-
-
-    // Check if the request matches the expected URL pattern
-    const match = pathname.match(regex);
-    if (match) {
-        let query = match[1]; // Extract the query from the match
-
-        // Block dangerous queries (DROP, DELETE)
-        if (/drop|delete/i.test(query)) {
-            res.writeHead(403, { 'Content-Type': 'text/plain' });
-            res.end(messages.errors.sqlForbidden); // Use message from en.js
-            return;
-        }
-
-        // Execute the query
-        db.query(query, (err, result) => {
+    connectToDatabase() {
+        this.db.connect((err) => {
             if (err) {
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: messages.errors.sqlError.replace('%1', err.message) }));
+                console.error('Error connecting to MySQL:', err);
+                throw err;
+            }
+            console.log('MySQL connected...');
+            this.createTable();
+        });
+    }
+
+    createTable() {
+        const createTable = `CREATE TABLE IF NOT EXISTS patient (
+            patientid INT(11) AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100),
+            dateOfBirth DATETIME
+        ) ENGINE=INNODB;`;
+
+        this.db.query(createTable, (err, result) => {
+            if (err) {
+                console.error('Error creating table:', err);
+                throw err;
+            }
+            console.log("Table created or exists.");
+        });
+    }
+
+    executeQuery(query, callback) {
+        this.db.query(query, (err, result) => {
+            if (err) {
+                return callback(err, null);
+            }
+            callback(null, result);
+        });
+    }
+}
+
+// Server class for handling HTTP requests and responses
+class Server {
+    constructor(database) {
+        this.database = database;
+    }
+
+    start() {
+        http.createServer((req, res) => {
+            console.log(`Incoming request: ${req.method} ${req.url}`);
+
+            // Set CORS headers
+            res.setHeader('Access-Control-Allow-Origin', '*');  // Allow all origins
+            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+            // Handle OPTIONS (preflight) requests
+            if (req.method === 'OPTIONS') {
+                console.log('OPTIONS request, sending 204 No Content');
+                res.writeHead(204);
+                res.end();
                 return;
             }
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(result));
+
+            this.handleRequest(req, res);
+
+        }).listen(port, () => {
+            console.log(`Server running at http://localhost:${port}/`);
         });
-    } else {
-        // Handle Insert Request (POST /insert)
-        if (req.method === 'POST' && parsedUrl.pathname === '/lab5/api/v1/insert') {
+    }
+
+    handleRequest(req, res) {
+        let parsedUrl = url.parse(req.url, true);
+        const pathname = decodeURIComponent(parsedUrl.pathname); // Decode the pathname
+        console.log(`Parsed URL: ${pathname}`);
+
+        // Regular expression to match the expected URL pattern
+        const regex = /\/lab5\/api\/v1\/sql\/"(.*)"/;
+        const match = pathname.match(regex);
+
+        // If the server URL matches the expected pattern
+        if (match) {
+            let query = match[1]; // Extract the query from the match
+            console.log(`Matched SQL query: ${query}`);
+
+            if (this.isForbiddenQuery(query)) {
+                this.blockForbiddenQuery(res);  
+            } else {
+                this.handleQuery(query, res);
+            }
+        // If the client sends a request to /lab5/api/v1/sql
+        } else if (parsedUrl.pathname === '/lab5/api/v1/sql') { 
+            this.handleApiRequest(req, res, parsedUrl);
+        } else {
+            console.log('404 Not Found - Invalid endpoint');
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: messages.errors.endpointNotFound }));
+        }
+    }
+
+    handleApiRequest(req, res, parsedUrl) {
+        let query;
+
+        // Handle GET requests
+        if (req.method === 'GET') {
+            query = parsedUrl.query.query;
+            console.log(`GET request with query: ${query}`);
+
+            if (!query) {
+                console.log('No query provided in GET request');
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: messages.errors.missingQuery }));
+                return;
+            }
+
+            if (this.isForbiddenQuery(query)) {
+                this.blockForbiddenQuery(res);
+            } else {
+                this.handleQuery(query, res);
+            }
+        }
+        // Handle POST requests
+        else if (req.method === 'POST') {
+            console.log('POST request received');
             let body = '';
             req.on('data', chunk => {
                 body += chunk.toString();
@@ -82,101 +146,70 @@ http.createServer((req, res) => {
 
             req.on('end', () => {
                 const bodyData = JSON.parse(body);
-                const patientData = bodyData.data;
-
-                if (!patientData || patientData.length === 0) {
-                    res.writeHead(400, { 'Content-Type': 'text/plain' });
-                    res.end(messages.errors.noPatientData); // Use message from en.js
-                    return;
-                }
-
-                // Insert patient data into the database
-                const insertData = `INSERT INTO patient (name, dateOfBirth) VALUES ${patientData};`;
-
-                db.query(insertData, (err, result) => {
-                    if (err) {
-                        res.writeHead(500, { 'Content-Type': 'text/plain' });
-                        res.end(messages.errors.insertError.replace('%1', err.message)); // Dynamic error message
-                        return;
-                    }
-                    res.writeHead(200, { 'Content-Type': 'text/plain' });
-                    res.end(messages.success.dataInserted); // Success message
-                });
-            });
-        }
-        // Handle SQL queries (POST or GET /sql)
-        else if (parsedUrl.pathname === '/lab5/api/v1/sql') {
-            let query;
-
-            // Handle GET requests (use URL parameter for the query)
-            if (req.method === 'GET') {
-                query = parsedUrl.query.query;
+                query = bodyData.query;
+                console.log(`POST request with query: ${query}`);
 
                 if (!query) {
-                    res.writeHead(400, { 'Content-Type': 'text/plain' });
-                    res.end(messages.errors.missingQuery); // Use message from en.js
+                    console.log('No query provided in POST request');
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: messages.errors.missingQuery }));
                     return;
                 }
 
-                // At this point, query has been set
-                handleQuery(query);
-            }
-            // Handle POST requests (read query from the request body)
-            else if (req.method === 'POST') {
-                let body = '';
-                req.on('data', chunk => {
-                    body += chunk.toString();
-                });
-
-                req.on('end', () => {
-                    const bodyData = JSON.parse(body);
-                    query = bodyData.query;
-
-                    if (!query) {
-                        res.writeHead(400, { 'Content-Type': 'text/plain' });
-                        res.end(messages.errors.missingQuery); // Use message from en.js
-                        return;
-                    }
-
-                    handleQuery(query);
-                });
-
-                return;
-            } else {
-                res.writeHead(405, { 'Content-Type': 'text/plain' });
-                res.end(messages.errors.endpointNotFound); // Use message from en.js
-                return;
-            }
-
-            // At this point, `query` has been set from either GET or POST
-            handleQuery(query);
-
-            function handleQuery(query) {
-                // Block DROP or DELETE queries
-                if (/drop|delete/i.test(query)) {
-                    res.writeHead(403, { 'Content-Type': 'text/plain' });
-                    res.end(messages.errors.sqlForbidden); // Use message from en.js
-                    return;
+                if (this.isForbiddenQuery(query)) {
+                    this.blockForbiddenQuery(res);
+                } else {
+                    this.handleQuery(query, res);
                 }
-
-                // Execute the query
-                db.query(query, (err, result) => {
-                    if (err) {
-                        res.writeHead(500, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ error: messages.errors.sqlError.replace('%1', err.message) }));
-                        return;
-                    }
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify(result));
-                });
-            }
-        }
-        // Default 404 response
-        else {
-            res.writeHead(404, { 'Content-Type': 'text/plain' });
-            res.end(messages.errors.endpointNotFound); // Use message from en.js
+            });
+        } else {
+            console.log('Unsupported HTTP method');
+            res.writeHead(405, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: messages.errors.endpointNotFound }));
         }
     }
-}).listen(port, () => {
-    console.log(`Server running at http://localhost:${port}/`);
-});
+
+    handleQuery(query, res) {
+        console.log(`Handling query: ${query}`);
+
+        this.database.executeQuery(query, (err, result) => {
+            if (err) {
+                console.error('Error executing query:', err);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: messages.errors.sqlError.replace('%1', err.message) }));
+                return;
+            }
+            console.log('Query executed successfully:', result);
+
+            let successMessage;
+            if (query.toLowerCase().includes('insert')) {
+                successMessage = messages.success.dataInserted;
+            } else {
+                successMessage = messages.success.dataRetrieved;
+            }
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                message: successMessage,
+                data: result
+            }));
+        });
+    }
+
+    isForbiddenQuery(query) {
+        return /drop|delete|update/i.test(query);
+    }
+
+    blockForbiddenQuery(res) {
+        console.log('Blocked dangerous SQL query');
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            error: messages.errors.sqlForbidden
+        }));
+    }
+}
+
+// Create instances and start the server
+const database = new Database();
+const server = new Server(database);
+server.start();
