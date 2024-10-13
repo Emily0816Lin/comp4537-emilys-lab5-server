@@ -55,7 +55,7 @@ http.createServer((req, res) => {
 
         req.on('end', () => {
             const bodyData = JSON.parse(body);
-            const patientData = bodyData.patients;
+            const patientData = bodyData.data;
 
             if (!patientData || patientData.length === 0) {
                 res.writeHead(400, { 'Content-Type': 'text/plain' });
@@ -110,6 +110,35 @@ http.createServer((req, res) => {
                 handleQuery(query);
             });
 
+
+
+
+            // req.on('end', () => {
+            //     const bodyData = JSON.parse(body);
+            //     const patientData = bodyData.data;
+            
+            //     if (!patientData || patientData.length === 0) {
+            //         res.writeHead(400, { 'Content-Type': 'text/plain' });
+            //         res.end(messages.errors.noPatientData); // Use message from en.js
+            //         return;
+            //     }
+            
+            //     // Format the patient data for SQL insertion
+            //     const values = patientData.map(patient => `('${patient.name}', '${patient.dateOfBirth}')`).join(", ");
+            //     const insertData = `INSERT INTO patients (name, dateOfBirth) VALUES ${values};`;
+            
+            //     db.query(insertData, (err, result) => {
+            //         if (err) {
+            //             res.writeHead(500, { 'Content-Type': 'text/plain' });
+            //             res.end(messages.errors.insertError.replace('%1', err.message)); // Dynamic error message
+            //             return;
+            //         }
+            //         res.writeHead(200, { 'Content-Type': 'text/plain' });
+            //         res.end(messages.success.dataInserted); // Success message
+            //     });
+            // });
+            
+
             return;
         } else {
             res.writeHead(405, { 'Content-Type': 'text/plain' });
@@ -148,3 +177,5 @@ http.createServer((req, res) => {
 }).listen(port, () => {
     console.log(`Server running at http://localhost:${port}/`);
 });
+
+
