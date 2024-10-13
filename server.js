@@ -10,9 +10,9 @@ const port = process.env.PORT || 3000; // Use the Heroku-assigned port if availa
 // Create connection to the MySQL database
 const db = mysql.createConnection({
     host: 'zj2x67aktl2o6q2n.cbetxkdyhwsb.us-east-1.rds.amazonaws.com',
-    user: 'e72hw5599nadybng',  
-    password: 'ek1g35pc8itb0xm8',  
-    database: 'eo3ysjp1m3pfhh64'  
+    user: 'e72hw5599nadybng',
+    password: 'ek1g35pc8itb0xm8',
+    database: 'eo3ysjp1m3pfhh64'
 });
 
 // Create the patient table if it doesn't exist
@@ -34,8 +34,8 @@ db.connect((err) => {
 http.createServer((req, res) => {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');  // Allow all origins
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');  
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');  
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     // Handle OPTIONS (preflight) requests
     if (req.method === 'OPTIONS') {
@@ -89,6 +89,9 @@ http.createServer((req, res) => {
                 res.end(messages.errors.missingQuery); // Use message from en.js
                 return;
             }
+
+            // At this point, query has been set
+            handleQuery(query);
         }
         // Handle POST requests (read query from the request body)
         else if (req.method === 'POST') {
@@ -109,35 +112,6 @@ http.createServer((req, res) => {
 
                 handleQuery(query);
             });
-
-
-
-
-            // req.on('end', () => {
-            //     const bodyData = JSON.parse(body);
-            //     const patientData = bodyData.data;
-            
-            //     if (!patientData || patientData.length === 0) {
-            //         res.writeHead(400, { 'Content-Type': 'text/plain' });
-            //         res.end(messages.errors.noPatientData); // Use message from en.js
-            //         return;
-            //     }
-            
-            //     // Format the patient data for SQL insertion
-            //     const values = patientData.map(patient => `('${patient.name}', '${patient.dateOfBirth}')`).join(", ");
-            //     const insertData = `INSERT INTO patients (name, dateOfBirth) VALUES ${values};`;
-            
-            //     db.query(insertData, (err, result) => {
-            //         if (err) {
-            //             res.writeHead(500, { 'Content-Type': 'text/plain' });
-            //             res.end(messages.errors.insertError.replace('%1', err.message)); // Dynamic error message
-            //             return;
-            //         }
-            //         res.writeHead(200, { 'Content-Type': 'text/plain' });
-            //         res.end(messages.success.dataInserted); // Success message
-            //     });
-            // });
-            
 
             return;
         } else {
