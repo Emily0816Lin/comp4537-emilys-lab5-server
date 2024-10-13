@@ -16,9 +16,6 @@ module.exports = {
   success: {
     newEntryRecorded: 'Request# %3\nNew entry recorded:\n"%1: %2"',
     dataInserted: 'Data inserted successfully',
-  },
-  info: {
-    wordDefinition: '%1: %2'
   }
 };
 
