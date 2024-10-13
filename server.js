@@ -1,13 +1,24 @@
+// Disclosure: I used ChatGPT to assist with the content of this assignment.
+
+
 const http = require('http');
 const mysql = require('mysql2');
 const url = require('url');
+const messages = require('./lang/en/en');
+const port = process.env.PORT || 3000; // Use the Heroku-assigned port if available, otherwise default to 3000
+
 
 // Create connection to the MySQL database
 const db = mysql.createConnection({
-    host: '',
-    user: '',  // replace with your MySQL username
-    password: '',  // replace with your MySQL password
-    database: 'patients_db'
+    // host: '127.0.0.1',
+    // user: 'root',  // replace with your MySQL username
+    // password: '',  // replace with your MySQL password
+    // database: 'patients_db'
+
+    host: 'zj2x67aktl2o6q2n.cbetxkdyhwsb.us-east-1.rds.amazonaws.com',
+    user: 'e72hw5599nadybng',  // Replace with the username provided by JawsDB
+    password: 'ek1g35pc8itb0xm8',  // Replace with the password provided by JawsDB
+    database: 'eo3ysjp1m3pfhh64'  // Replace with the database name provided by JawsDB
 });
 
 // Create the patient table if it doesn't exist
@@ -48,7 +59,6 @@ http.createServer((req, res) => {
             ('Sara Brown', '1901-01-01'), 
             ('John Smith', '1941-01-01'), 
             ('Jack Ma', '1961-01-30'), 
-            
             ('Elon Musk', '1999-01-01');`;
 
         db.query(insertData, (err, result) => {
@@ -132,6 +142,6 @@ http.createServer((req, res) => {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Route not found');
     }
-}).listen(3000, () => {
+}).listen(port, () => {
     console.log('Server running at http://localhost:3000/');
 });
