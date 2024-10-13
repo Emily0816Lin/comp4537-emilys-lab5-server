@@ -55,7 +55,7 @@ http.createServer((req, res) => {
 
         req.on('end', () => {
             const bodyData = JSON.parse(body);
-            const patientData = bodyData.data;
+            const patientData = bodyData.patients;
 
             if (!patientData || patientData.length === 0) {
                 res.writeHead(400, { 'Content-Type': 'text/plain' });
