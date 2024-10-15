@@ -87,6 +87,9 @@ class Server {
     }
 
     handleRequest(req, res) {
+        // Ensure the table exists before handling the request
+        this.database.createTable(); // Check and create the table if it doesn't exist
+
         let parsedUrl = url.parse(req.url, true);
         const pathname = decodeURIComponent(parsedUrl.pathname); // Decode the pathname
         console.log(`Parsed URL: ${pathname}`);
@@ -101,12 +104,12 @@ class Server {
             console.log(`Matched SQL query: ${query}`);
 
             if (this.isForbiddenQuery(query)) {
-                this.blockForbiddenQuery(res);  
+                this.blockForbiddenQuery(res);
             } else {
                 this.handleQuery(query, res);
             }
-        // If the client sends a request to /lab5/api/v1/sql
-        } else if (parsedUrl.pathname === '/lab5/api/v1/sql') { 
+            // If the client sends a request to /lab5/api/v1/sql
+        } else if (parsedUrl.pathname === '/lab5/api/v1/sql') {
             this.handleApiRequest(req, res, parsedUrl);
         } else {
             console.log('404 Not Found - Invalid endpoint');
