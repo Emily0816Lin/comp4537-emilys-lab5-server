@@ -16,13 +16,6 @@ class Database {
             database: 'eo3ysjp1m3pfhh64'
         });
 
-        // this.db = mysql.createConnection({
-        //     host: '2ipgju.stackhero-network.com',
-        //     user: 'user123',
-        //     password: 'user123',
-        //     database: 'root'
-        // });
-
         this.connectToDatabase();
     }
 
@@ -110,14 +103,11 @@ class Server {
             let query = match[1]; // Extract the query from the match
             console.log(`Matched SQL query: ${query}`);
 
-            // if (this.isForbiddenQuery(query)) {
-            //     this.blockForbiddenQuery(res);
-            // } else {
-            //     this.handleQuery(query, res);
-            // }
-            this.handleQuery(query, res);
-
-
+            if (this.isForbiddenQuery(query)) {
+                this.blockForbiddenQuery(res);
+            } else {
+                this.handleQuery(query, res);
+            }
             // If the client sends a request to /lab5/api/v1/sql
         } else if (parsedUrl.pathname === '/lab5/api/v1/sql') {
             this.handleApiRequest(req, res, parsedUrl);
@@ -143,12 +133,11 @@ class Server {
                 return;
             }
 
-            // if (this.isForbiddenQuery(query)) {
-            //     this.blockForbiddenQuery(res);
-            // } else {
-            //     this.handleQuery(query, res);
-            // }
-            this.handleQuery(query, res);
+            if (this.isForbiddenQuery(query)) {
+                this.blockForbiddenQuery(res);
+            } else {
+                this.handleQuery(query, res);
+            }
         }
         // Handle POST requests
         else if (req.method === 'POST') {
@@ -170,12 +159,11 @@ class Server {
                     return;
                 }
 
-                // if (this.isForbiddenQuery(query)) {
-                //     this.blockForbiddenQuery(res);
-                // } else {
-                //     this.handleQuery(query, res);
-                // }
-                this.handleQuery(query, res);
+                if (this.isForbiddenQuery(query)) {
+                    this.blockForbiddenQuery(res);
+                } else {
+                    this.handleQuery(query, res);
+                }
             });
         } else {
             console.log('Unsupported HTTP method');
@@ -211,9 +199,9 @@ class Server {
         });
     }
 
-    // isForbiddenQuery(query) {
-    //     return /drop|delete|update/i.test(query);
-    // }
+    isForbiddenQuery(query) {
+        return /drop|delete|update/i.test(query);
+    }
 
     blockForbiddenQuery(res) {
         console.log('Blocked dangerous SQL query');
