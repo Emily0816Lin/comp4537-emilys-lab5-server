@@ -9,19 +9,19 @@ const port = process.env.PORT || 3000; // Use the Heroku-assigned port if availa
 // Database class for managing MySQL connection and queries
 class Database {
     constructor() {
-        // this.db = mysql.createConnection({
-        //     host: 'zj2x67aktl2o6q2n.cbetxkdyhwsb.us-east-1.rds.amazonaws.com',
-        //     user: 'e72hw5599nadybng',
-        //     password: 'ek1g35pc8itb0xm8',
-        //     database: 'eo3ysjp1m3pfhh64'
-        // });
-
         this.db = mysql.createConnection({
-            host: '2ipgju.stackhero-network.com',
-            user: 'user123',
-            password: 'user123',
-            database: 'root'
+            host: 'zj2x67aktl2o6q2n.cbetxkdyhwsb.us-east-1.rds.amazonaws.com',
+            user: 'e72hw5599nadybng',
+            password: 'ek1g35pc8itb0xm8',
+            database: 'eo3ysjp1m3pfhh64'
         });
+
+        // this.db = mysql.createConnection({
+        //     host: '2ipgju.stackhero-network.com',
+        //     user: 'user123',
+        //     password: 'user123',
+        //     database: 'root'
+        // });
 
         this.connectToDatabase();
     }
